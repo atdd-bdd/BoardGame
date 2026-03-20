@@ -1,0 +1,25 @@
+
+Three versions:     
+
+Command line   enter location via text  display the boards side by side
+
+One in Qt - written for mac / windows / linux 
+
+One in browser 
+
+On all of them, show the display for both player and opponent, and the ship status for the player.   
+
+Click on the selected location.   It highlights.  When move is made, then it is marked for miss or hit.    
+
+Do a REST API at boardgame.this-is-only-a-test.com 
+
+Polling  
+	When message received, update the board/ship status and send back response.      
+
+	When location is selected (text or click), send it as a move with the response from the previous move.   
+
+	Poll every two seconds.   
+
+
+
+

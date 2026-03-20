@@ -1,0 +1,58 @@
+Feature: Board Game Protocol 
+
+Scenario:  Start Game 
+Given I am 
+| Ken | 
+Given game is 
+| Status      | Winner |
+| Not Started | TBD    |
+And game does not exist 
+| Game ID    | 
+| Ken-George |
+When player enters 
+| My Name   | Ken    |
+| Your Name | George |
+Then game is now
+| Game ID    | Turn | Status      | Turn |
+| Ken-George | 1    | In Progress | Ken  |
+
+Scenario: Send a move 
+Given game is
+| Game ID    | Turn | Status      | Turn |
+| Ken-George | 1    | In Progress | Ken  |
+When player enters 
+| Location | 2,3|
+Then message sent
+| Game ID    | Turn | Status      | Turn | Move | Previous Move  | Result |
+| Ken-George | 1    | In Progress | Ken  | 2,3  | None           | None   |
+Then game is now 
+| Game ID    | Turn | Status      | Turn   | Move | Previous Move  | Result |
+| Ken-George | 2    | In Progress | George |      | 2,3            | None   |
+When other player enters 
+| Location | 4,5 |
+Then message sent
+| Game ID    | Turn | Status      | Turn   | Move | Previous Move | Result |
+| Ken-George | 2    | In Progress | George | 4,5  | 2,3           | Miss   |
+Then game is now 
+| Game ID    | Turn | Status      | Turn   | Move | Previous Move | Result |
+| Ken-George | 3    | In Progress | Ken    |      | 4,5           | Miss   |
+
+Scenario: End of game 
+Given my ships are
+| Type       | Length | Status    | Location | Orientation |
+| Battleship | 4      | Destroyed | 1,1      | Vertical    |
+| Cruiser    | 3      | Destroyed | 2,2      | Horizontal  |
+Then message sent
+| Game ID    | Turn | Status            | Turn | Move | Previous Move  | Result  |
+| Ken-George | 1    | Over - You won    | Ken  | None | None           | None    |
+Then game is now
+Then message sent
+| Game ID    | Turn | Status | Winner | Turn | Move | Previous Move | Result |
+| Ken-George | 1    | Over   | George | Ken  | None | None          | None   |
+
+
+
+
+
+
+
