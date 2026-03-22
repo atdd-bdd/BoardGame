@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:boardgame.this-is-only-a-test.com)"
+    ]
+  }
+}
