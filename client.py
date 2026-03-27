@@ -163,6 +163,8 @@ def game_loop(server, game_id, my_name):
         print(f"=== BATTLESHIP  {game_id} ===")
         if game['status'] == 'Over':
             print(f"Status: GAME OVER  |  Winner: {game['winner']}")
+        elif game['status'] == 'Cancelled':
+            print(f"Status: CANCELLED")
         else:
             print(f"Status: {game['status']}  |  Turn {game['turn']}  |  Now playing: {game['current_turn']}")
         print()
@@ -186,10 +188,22 @@ def game_loop(server, game_id, my_name):
                 print("*** YOU LOST.  Better luck next time! ***")
             break
 
+        if game['status'] == 'Cancelled':
+            by = game.get('cancelled_by', '')
+            if by == my_name:
+                print("\nYou quit the game.")
+            elif by == 'timeout':
+                print("\nGame ended — inactivity timeout.")
+            else:
+                print(f"\n{by or 'Opponent'} quit the game.")
+            break
+
         if game['current_turn'] == my_name:
             print()
             while True:
-                target = input("Your move (e.g. C5): ").strip().upper()
+                target = input("Your move (e.g. C5, or Q to quit): ").strip().upper()
+                if target == 'Q':
+                    raise KeyboardInterrupt
                 r, c = parse_loc(target)
                 if r is None or not (1 <= r <= 10 and 1 <= c <= 10):
                     print("  Invalid — use letter A-J followed by number 1-10 (e.g. C5)")
@@ -228,6 +242,8 @@ def main():
     print("2. Join existing game")
     choice = input("\nChoice (1/2): ").strip()
 
+    stale = {'Cancelled', 'Over'}
+
     if choice == '1':
         my_name  = input("Your name: ").strip()
         opp_name = input("Opponent's name: ").strip()
@@ -241,25 +257,26 @@ def main():
             sys.exit(1)
         game_id = api_json(resp)['game_id']
         print(f"\nGame created!  Game ID: {game_id}")
-        print(f"Tell your opponent: python client.py --server {server}")
-        print(f"They should choose option 2 and enter Game ID: {game_id}")
+        print(f"Tell your opponent to enter their name ({opp_name}) and your name ({my_name}).")
         input("\nPress Enter to continue to ship placement...")
 
     elif choice == '2':
-        game_id = input("Game ID: ").strip()
         my_name  = input("Your name: ").strip()
-        try:
-            resp = requests.get(f'{server}/games/{game_id}', timeout=5)
-        except requests.RequestException as e:
-            print(f"Cannot reach server: {e}")
-            sys.exit(1)
-        if resp.status_code != 200:
-            print("Game not found on server.")
-            sys.exit(1)
-        game = api_json(resp)
-        if my_name not in (game['player1'], game['player2']):
-            print(f"Name '{my_name}' is not part of game '{game_id}'.")
-            print(f"  Players: {game['player1']} and {game['player2']}")
+        opp_name = input("Opponent's name: ").strip()
+        game_id  = None
+        for gid in [f'{opp_name}-{my_name}', f'{my_name}-{opp_name}']:
+            try:
+                resp = requests.get(f'{server}/games/{gid}', timeout=5)
+            except requests.RequestException:
+                continue
+            if resp.status_code == 200:
+                g = api_json(resp)
+                if g['status'] not in stale and my_name in (g['player1'], g['player2']):
+                    game_id = gid
+                    break
+        if not game_id:
+            print(f"No active game found for {my_name} vs {opp_name}.")
+            print("Make sure your opponent has created the game first.")
             sys.exit(1)
     else:
         print("Invalid choice.")
@@ -271,8 +288,13 @@ def main():
     while True:
         try:
             resp = requests.get(f'{server}/games/{game_id}', timeout=5)
-            if resp.status_code == 200 and api_json(resp)['status'] == 'In Progress':
-                break
+            if resp.status_code == 200:
+                st = api_json(resp)['status']
+                if st == 'In Progress':
+                    break
+                if st == 'Cancelled':
+                    print("\nGame was cancelled while waiting for ships.")
+                    sys.exit(0)
         except requests.RequestException:
             pass
         print('.', end='', flush=True)
@@ -280,7 +302,15 @@ def main():
 
     print("\nBoth players ready — game on!\n")
     time.sleep(1)
-    game_loop(server, game_id, my_name)
+    try:
+        game_loop(server, game_id, my_name)
+    except KeyboardInterrupt:
+        print("\n\nQuitting...")
+        try:
+            requests.delete(f'{server}/games/{game_id}', json={'player': my_name}, timeout=3)
+        except Exception:
+            pass
+        print("Game cancelled.")
 
 
 if __name__ == '__main__':
