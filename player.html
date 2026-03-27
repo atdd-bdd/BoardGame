@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battleship</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0c0c0c;
+  color: #33ff33;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 1.5rem;
+}
+
+#terminal { max-width: 960px; }
+
+pre { white-space: pre; }
+
+.hidden { display: none !important; }
+
+.err {
+  color: #ff5555;
+  min-height: 1.2rem;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* ── prompt rows ── */
+.prow {
+  display: flex;
+  align-items: baseline;
+  margin-top: 0.35rem;
+}
+.plabel { white-space: nowrap; }
+
+input[type="text"] {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #33ff33;
+  color: #33ff33;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 0 2px;
+  caret-color: #99ff99;
+}
+input[type="text"]:focus { border-bottom-color: #99ff99; }
+
+select {
+  background: #0c0c0c;
+  border: 1px solid #33ff33;
+  color: #33ff33;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 1px 4px;
+}
+select option { background: #0c0c0c; }
+
+.btn {
+  background: transparent;
+  border: 1px solid #33ff33;
+  color: #33ff33;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 1px 12px;
+  margin-left: 1.5rem;
+}
+.btn:hover:not(:disabled) { background: #002200; color: #99ff99; }
+.btn:disabled { color: #1a5c1a; border-color: #1a5c1a; cursor: default; }
+
+.dim    { color: #1a8a1a; }
+.bright { color: #ccffcc; }
+.warn   { color: #ffcc00; }
+</style>
+</head>
+<body>
+<div id="terminal">
+
+<!-- ══ JOIN ══ -->
+<div id="join-phase">
+  <pre class="bright">=== BATTLESHIP ===
+</pre>
+  <div id="step-choice">
+    <pre>  1. Create new game  (you go first)
+  2. Join existing game
+</pre>
+    <div class="prow">
+      <span class="plabel">Choice (1/2): </span>
+      <input id="inp-choice" type="text" maxlength="1" style="width:30px"
+             onkeydown="if(event.key==='Enter')handleChoice()" autofocus>
+      <button class="btn" onclick="handleChoice()">Enter</button>
+    </div>
+    <span id="choice-err" class="err"></span>
+  </div>
+
+  <div id="step-create" class="hidden">
+    <div class="prow">
+      <span class="plabel">Your name: </span>
+      <input id="inp-my-name-c" type="text" style="width:180px"
+             onkeydown="if(event.key==='Enter')document.getElementById('inp-opp-name-c').focus()">
+    </div>
+    <div class="prow">
+      <span class="plabel">Opponent's name: </span>
+      <input id="inp-opp-name-c" type="text" style="width:180px"
+             onkeydown="if(event.key==='Enter')createGame()">
+      <button class="btn" id="btn-create" onclick="createGame()">Create Game</button>
+    </div>
+    <span id="create-err" class="err"></span>
+  </div>
+
+  <div id="step-created" class="hidden">
+    <pre id="created-msg"></pre>
+    <button class="btn" onclick="enterSetup()">Press Enter to continue to ship placement</button>
+  </div>
+
+  <div id="step-join" class="hidden">
+    <pre class="dim">
+  Enter your name and your opponent's name.
+  The system will find the game your opponent created.
+</pre>
+    <div class="prow">
+      <span class="plabel">Your name: </span>
+      <input id="inp-my-name-j" type="text" style="width:180px"
+             onkeydown="if(event.key==='Enter')document.getElementById('inp-opp-name-j').focus()">
+    </div>
+    <div class="prow">
+      <span class="plabel">Opponent's name: </span>
+      <input id="inp-opp-name-j" type="text" style="width:180px"
+             onkeydown="if(event.key==='Enter')joinGame()">
+      <button class="btn" id="btn-join" onclick="joinGame()">Join Game</button>
+    </div>
+    <span id="join-err" class="err"></span>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div id="setup-phase" class="hidden">
+  <pre id="setup-header"></pre>
+  <pre id="setup-board"></pre>
+  <div id="setup-form">
+    <pre id="setup-prompt"></pre>
+    <div class="prow">
+      <span class="plabel">  Location (e.g. A3): </span>
+      <input id="inp-loc" type="text" maxlength="3" style="width:55px; text-transform:uppercase"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')document.getElementById('inp-orient').focus()">
+    </div>
+    <div class="prow">
+      <span class="plabel">  Orientation: </span>
+      <select id="inp-orient" onkeydown="if(event.key==='Enter')placeShip()">
+        <option value="H">H - Horizontal (extends right)</option>
+        <option value="V">V - Vertical   (extends down)</option>
+      </select>
+      <button class="btn" id="btn-place" onclick="placeShip()">Place Ship</button>
+    </div>
+    <span id="setup-err" class="err"></span>
+  </div>
+  <pre id="setup-status" class="dim"></pre>
+</div>
+
+<!-- ══ PLAY ══ -->
+<div id="play-phase" class="hidden">
+  <pre id="play-output"></pre>
+  <div id="fire-row" class="hidden">
+    <div class="prow">
+      <span class="plabel">Your move (e.g. C5): </span>
+      <input id="inp-fire" type="text" maxlength="3" style="width:55px; text-transform:uppercase"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')fire()">
+      <button class="btn" id="btn-fire" onclick="fire()">Fire!</button>
+    </div>
+    <span id="fire-err" class="err"></span>
+  </div>
+  <pre id="waiting-row" class="hidden dim"></pre>
+  <div id="gameover-row" class="hidden">
+    <pre id="gameover-text" class="bright"></pre>
+    <button class="btn" onclick="location.reload()" style="margin-top:0.5rem">Play Again</button>
+  </div>
+</div>
+
+</div><!-- #terminal -->
+<script>
+// ─────────────────────────────────────────────
+// Config / constants
+// ─────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const BASE   = params.get('server') || '';
+
+const SHIPS = [
+  { type: 'Carrier',    length: 5, symbol: 'A' },
+  { type: 'Battleship', length: 4, symbol: 'B' },
+  { type: 'Cruiser',    length: 3, symbol: 'C' },
+  { type: 'Submarine',  length: 3, symbol: 'S' },
+  { type: 'Destroyer',  length: 2, symbol: 'D' },
+];
+
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let myName = '', oppName = '', gameId = '';
+let localBoard = null;
+let placedShips = [];
+let shipIdx = 0;
+let pollTimer = null;
+let firingLocked = false;
+
+// ─────────────────────────────────────────────
+// API
+// ─────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  try {
+    const res  = await fetch(BASE + path, opts);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: 'Network error: ' + e.message } };
+  }
+}
+
+// ─────────────────────────────────────────────
+// Board rendering (mirrors terminal client)
+// ─────────────────────────────────────────────
+function emptyBoard() {
+  return Array.from({ length: 10 }, () => Array(10).fill(' '));
+}
+
+function boardLines(board, hideShips = false, label = '') {
+  const sm = { ' ': '.', '@': '@', 'X': 'X',
+               'A': 'A', 'B': 'B', 'C': 'C', 'S': 'S', 'D': 'D' };
+  if (hideShips) ['A','B','C','S','D'].forEach(k => { sm[k] = '.'; });
+  const hdrs  = Array.from('ABCDEFGHIJ').map(c => c.padStart(3)).join('');
+  const lines = label ? ['  ' + label] : [];
+  lines.push('    ' + hdrs);
+  for (let r = 0; r < 10; r++) {
+    const row = board[r].map(c => (sm[c] || '.').padStart(3)).join('');
+    lines.push(String(r + 1).padStart(2) + '  ' + row);
+  }
+  return lines;
+}
+
+function sideBySide(game) {
+  const opp   = game.player1 === myName ? game.player2 : game.player1;
+  const left  = boardLines(game.boards[myName], false, 'YOUR BOARD  (' + myName + ')');
+  const right = boardLines(game.boards[opp],    true,  'OPPONENT    (' + opp + ')');
+  return left.map((l, i) => l.padEnd(42) + '  ' + (right[i] || '')).join('\n');
+}
+
+function shipTable(ships) {
+  let out = '\n  Ship           Len   Status\n  ' + '-'.repeat(30);
+  for (const s of Object.values(ships)) {
+    out += '\n  ' + s.type.padEnd(14) + ' ' + String(s.length).padEnd(5) + ' ' + s.status;
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────
+// Placement validation (client-side)
+// ─────────────────────────────────────────────
+function parseLoc(s) {
+  if (!s) return null;
+  s = s.trim().toUpperCase();
+  if (!/^[A-J]([1-9]|10)$/.test(s)) return null;
+  return { r: parseInt(s.slice(1)), c: s.charCodeAt(0) - 65 + 1 };
+}
+
+function shipCells(loc, orient, length) {
+  const p = parseLoc(loc);
+  if (!p) return null;
+  return Array.from({ length }, (_, i) =>
+    orient === 'V' ? { r: p.r + i, c: p.c } : { r: p.r, c: p.c + i }
+  );
+}
+
+function validatePlacement(loc, orient, length) {
+  const cells = shipCells(loc, orient, length);
+  if (!cells)                                    return 'Invalid format — use letter A-J then 1-10 (e.g. C5)';
+  if (!cells.every(({r,c}) => r>=1&&r<=10&&c>=1&&c<=10)) return 'Off board';
+  if (cells.some(({r,c}) => localBoard[r-1][c-1] !== ' ')) return 'Overlap with existing ship';
+  return null;
+}
+
+// ─────────────────────────────────────────────
+// Phase helpers
+// ─────────────────────────────────────────────
+function showPhase(id) {
+  ['join-phase', 'setup-phase', 'play-phase'].forEach(p =>
+    document.getElementById(p).classList.toggle('hidden', p !== id)
+  );
+}
+
+// ─────────────────────────────────────────────
+// JOIN phase
+// ─────────────────────────────────────────────
+function handleChoice() {
+  const v   = document.getElementById('inp-choice').value.trim();
+  const err = document.getElementById('choice-err');
+  if (v === '1') {
+    document.getElementById('step-choice').classList.add('hidden');
+    document.getElementById('step-create').classList.remove('hidden');
+    document.getElementById('inp-my-name-c').focus();
+  } else if (v === '2') {
+    document.getElementById('step-choice').classList.add('hidden');
+    document.getElementById('step-join').classList.remove('hidden');
+    document.getElementById('inp-my-name-j').focus();
+  } else {
+    err.textContent = 'Enter 1 or 2.';
+  }
+}
+
+async function createGame() {
+  const mn  = document.getElementById('inp-my-name-c').value.trim();
+  const on  = document.getElementById('inp-opp-name-c').value.trim();
+  const err = document.getElementById('create-err');
+  err.textContent = '';
+  if (!mn || !on)  { err.textContent = 'Both names required.';     return; }
+  if (mn === on)   { err.textContent = 'Names must be different.'; return; }
+
+  document.getElementById('btn-create').disabled = true;
+  myName = mn; oppName = on;
+
+  const r = await api('POST', '/games', { player1: mn, player2: on });
+  if (!r.ok) {
+    err.textContent = r.data.error || 'Failed to create game.';
+    document.getElementById('btn-create').disabled = false;
+    return;
+  }
+  gameId = r.data.game_id;
+
+  // Show game ID confirmation — player 1 must share this with player 2
+  document.getElementById('step-create').classList.add('hidden');
+  document.getElementById('created-msg').textContent =
+    '\nGame created!  Game ID: ' + gameId +
+    '\n\nTell your opponent to open this page and choose option 2.' +
+    '\nThey should enter their name (' + oppName + ') and your name (' + myName + ').' +
+    '\n';
+  document.getElementById('step-created').classList.remove('hidden');
+}
+
+async function joinGame() {
+  const mn  = document.getElementById('inp-my-name-j').value.trim();
+  const on  = document.getElementById('inp-opp-name-j').value.trim();
+  const err = document.getElementById('join-err');
+  err.textContent = '';
+  if (!mn || !on) { err.textContent = 'Both names required.'; return; }
+  if (mn === on)  { err.textContent = 'Names must be different.'; return; }
+
+  document.getElementById('btn-join').disabled = true;
+  const stale = s => s === 'Cancelled' || s === 'Over';
+
+  // Try the game your opponent created: oppName-myName
+  let r = await api('GET', `/games/${on}-${mn}`);
+  if (r.ok && !stale(r.data.status) && r.data.player2 === mn) {
+    myName = mn; oppName = on; gameId = r.data.game_id;
+    r.data.ships_placed && r.data.ships_placed[mn] ? enterPlay() : enterSetup();
+    return;
+  }
+
+  // Try the reverse: myName-oppName (in case I created it earlier)
+  r = await api('GET', `/games/${mn}-${on}`);
+  if (r.ok && !stale(r.data.status) && r.data.player1 === mn) {
+    myName = mn; oppName = on; gameId = r.data.game_id;
+    r.data.ships_placed && r.data.ships_placed[mn] ? enterPlay() : enterSetup();
+    return;
+  }
+
+  err.textContent = 'Game not found. Make sure your opponent has created the game first.';
+  document.getElementById('btn-join').disabled = false;
+}
+
+// ─────────────────────────────────────────────
+// SETUP phase
+// ─────────────────────────────────────────────
+function enterSetup() {
+  showPhase('setup-phase');
+  localBoard  = emptyBoard();
+  placedShips = [];
+  shipIdx     = 0;
+  renderSetup();
+  document.getElementById('inp-loc').focus();
+}
+
+function renderSetup() {
+  document.getElementById('setup-header').textContent =
+    '=== Ship Placement \u2014 ' + myName + ' ===\n\n' +
+    'Vertical = extends down   Horizontal = extends right\n';
+  document.getElementById('setup-board').textContent =
+    boardLines(localBoard, false, 'YOUR BOARD').join('\n');
+
+  if (shipIdx < SHIPS.length) {
+    const ship = SHIPS[shipIdx];
+    document.getElementById('setup-prompt').textContent =
+      '\nPlace ' + ship.type + ' (length ' + ship.length + '):';
+    document.getElementById('setup-form').classList.remove('hidden');
+  } else {
+    document.getElementById('setup-prompt').textContent = '\nAll ships placed!';
+    document.getElementById('setup-form').classList.add('hidden');
+  }
+}
+
+async function placeShip() {
+  const loc    = document.getElementById('inp-loc').value.trim().toUpperCase();
+  const orient = document.getElementById('inp-orient').value;
+  const err    = document.getElementById('setup-err');
+  err.textContent = '';
+
+  const ship   = SHIPS[shipIdx];
+  const errMsg = validatePlacement(loc, orient, ship.length);
+  if (errMsg) { err.textContent = '  *** ' + errMsg + ' ***'; return; }
+
+  // Paint local board
+  const sym   = ship.symbol;
+  const cells = shipCells(loc, orient, ship.length);
+  cells.forEach(({ r, c }) => { localBoard[r-1][c-1] = sym; });
+  placedShips.push({
+    type: ship.type, location: loc,
+    orientation: orient === 'V' ? 'Vertical' : 'Horizontal'
+  });
+  shipIdx++;
+
+  document.getElementById('inp-loc').value = '';
+  document.getElementById('setup-err').textContent = '';
+  renderSetup();
+
+  if (shipIdx >= SHIPS.length) {
+    await submitShips();
+  } else {
+    document.getElementById('inp-loc').focus();
+  }
+}
+
+async function submitShips() {
+  document.getElementById('setup-status').textContent = '\nSubmitting ships to server...';
+  const r = await api('POST', `/games/${gameId}/ships/${myName}`, { ships: placedShips });
+  if (!r.ok) {
+    document.getElementById('setup-form').classList.remove('hidden');
+    document.getElementById('setup-err').textContent =
+      '  *** Server error: ' + (r.data.error || 'Unknown') + ' ***';
+    document.getElementById('setup-status').textContent = '';
+    return;
+  }
+  document.getElementById('setup-status').textContent =
+    '\nAll ships placed and confirmed by server!\nWaiting for opponent to place ships...';
+  enterPlay();
+}
+
+// ─────────────────────────────────────────────
+// PLAY phase
+// ─────────────────────────────────────────────
+function enterPlay() {
+  showPhase('play-phase');
+  startPolling();
+}
+
+function startPolling() { poll(); pollTimer = setInterval(poll, 2000); }
+function stopPolling()  { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+async function poll() {
+  const r = await api('GET', `/games/${gameId}`);
+  if (!r.ok) {
+    if (r.status === 404) { stopPolling(); showEndMsg('Game not found on server.'); }
+    return;
+  }
+  const game   = r.data;
+  const status = game.status;
+
+  // Build main output text
+  let out = '=== BATTLESHIP  ' + gameId + ' ===\n';
+
+  if (status === 'Setup') {
+    const placed = game.ships_placed || {};
+    out += 'Status: SETUP\n\n  Waiting for ships to be placed:\n';
+    out += '    ' + myName  + ': ' + (placed[myName]  ? 'ready' : 'placing...') + '\n';
+    out += '    ' + oppName + ': ' + (placed[oppName] ? 'ready' : 'placing...') + '\n';
+    document.getElementById('play-output').textContent = out;
+    document.getElementById('fire-row').classList.add('hidden');
+    document.getElementById('waiting-row').classList.add('hidden');
+    return;
+  }
+
+  if (status === 'Over') {
+    out += 'Status: GAME OVER  |  Winner: ' + game.winner + '\n\n';
+  } else if (status === 'Cancelled') {
+    out += 'Status: CANCELLED\n\n';
+  } else {
+    out += 'Status: ' + status + '  |  Turn ' + game.turn +
+           '  |  Now playing: ' + game.current_turn + '\n\n';
+  }
+
+  if (game.boards && game.boards[myName] && game.boards[oppName]) {
+    out += sideBySide(game) + '\n';
+  }
+  if (game.ships && game.ships[myName]) {
+    out += shipTable(game.ships[myName]) + '\n';
+  }
+  if (game.moves && game.moves.length > 0) {
+    const last = game.moves[game.moves.length - 1];
+    out += '\n  Last move: ' + last.player + ' fired at ' + last.location +
+           ' \u2014 ' + last.result;
+  }
+
+  document.getElementById('play-output').textContent = out;
+
+  if (status === 'Cancelled') {
+    stopPolling();
+    const by  = game.cancelled_by;
+    const msg = by === myName         ? 'You quit the game.'
+              : by === 'timeout'      ? 'Game ended \u2014 no activity for 10 minutes.'
+              : (by || 'Opponent') + ' quit the game.';
+    showEndMsg(msg);
+    return;
+  }
+
+  if (status === 'Over') {
+    stopPolling();
+    const won = game.winner === myName;
+    showEndMsg(won ? '*** YOU WIN!  Congratulations! ***'
+                   : '*** YOU LOST.  Better luck next time! ***');
+    return;
+  }
+
+  // Active game — show fire form or waiting
+  const isMyTurn = game.current_turn === myName;
+  const fireRow    = document.getElementById('fire-row');
+  const waitingRow = document.getElementById('waiting-row');
+  if (isMyTurn) {
+    fireRow.classList.remove('hidden');
+    waitingRow.classList.add('hidden');
+    document.getElementById('btn-fire').disabled = firingLocked;
+    if (!firingLocked) document.getElementById('inp-fire').focus();
+  } else {
+    fireRow.classList.add('hidden');
+    waitingRow.classList.remove('hidden');
+    waitingRow.textContent = '\n  Waiting for ' + game.current_turn + ' to move...';
+  }
+}
+
+function showEndMsg(msg) {
+  document.getElementById('fire-row').classList.add('hidden');
+  document.getElementById('waiting-row').classList.add('hidden');
+  const row = document.getElementById('gameover-row');
+  row.classList.remove('hidden');
+  document.getElementById('gameover-text').textContent = '\n' + msg + '\n';
+}
+
+async function fire() {
+  const input = document.getElementById('inp-fire');
+  const loc   = input.value.trim().toUpperCase();
+  const err   = document.getElementById('fire-err');
+  err.textContent = '';
+
+  if (!parseLoc(loc)) {
+    err.textContent = '  Invalid \u2014 use letter A-J followed by 1-10 (e.g. C5)';
+    return;
+  }
+
+  firingLocked = true;
+  document.getElementById('btn-fire').disabled = true;
+
+  const r = await api('POST', `/games/${gameId}/moves`, { player: myName, location: loc });
+  firingLocked = false;
+
+  if (!r.ok) {
+    err.textContent = '  Error: ' + (r.data.error || 'Could not fire.');
+    document.getElementById('btn-fire').disabled = false;
+    return;
+  }
+
+  input.value = '';
+  await poll();
+}
+</script>
+</body>
+</html>

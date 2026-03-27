@@ -112,6 +112,13 @@ def ship_cells(location, orientation, length):
         return [[r, c + i] for i in range(length)]
 
 
+@app.route('/player')
+def player_page():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'player.html')
+    with open(path) as f:
+        return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
 @app.route('/games', methods=['POST'])
 def create_game():
     d = request.get_json(force=True, silent=True)
@@ -119,7 +126,7 @@ def create_game():
         return jsonify({'error': 'Required fields: player1, player2'}), 400
     p1, p2 = d['player1'], d['player2']
     gid = f"{p1}-{p2}"
-    if gid in games:
+    if gid in games and games[gid]['status'] not in ('Cancelled', 'Over'):
         return jsonify({'error': 'Game already exists'}), 409
     games[gid] = {
         'game_id': gid, 'player1': p1, 'player2': p2,

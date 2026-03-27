@@ -214,8 +214,12 @@
   }
 
   .cell.ship {
-    background: #374151;
-    border-color: #4b5563;
+    background: #1e4d8c;
+    border-color: #38bdf8;
+  }
+
+  #placement-grid .cell {
+    cursor: pointer;
   }
 
   .cell.hit {
@@ -621,35 +625,44 @@ async function startGame() {
 
   document.getElementById('btn-start').disabled = true;
 
-  // Try as player1
+  const stale = s => s === 'Cancelled' || s === 'Over';
+
+  // Try as player1 (myName-oppName)
   let r = await api('GET', `/games/${myName}-${oppName}`);
   if (r.ok && r.data.player1 === myName) {
-    gameId = r.data.game_id;
-    myPlayer = 1;
-    await checkAndProceed(r.data);
-    return;
+    if (!stale(r.data.status)) {
+      gameId = r.data.game_id; myPlayer = 1;
+      await checkAndProceed(r.data); return;
+    }
+    // Stale — recreate with same player order (server allows replacing stale games)
+    const nr = await api('POST', '/games', { player1: myName, player2: oppName });
+    gameId = `${myName}-${oppName}`; myPlayer = 1;
+    const ns = await api('GET', `/games/${gameId}`);
+    if (ns.ok) { await checkAndProceed(ns.data); return; }
   }
 
-  // Try as player2
+  // Try as player2 (oppName-myName)
   r = await api('GET', `/games/${oppName}-${myName}`);
   if (r.ok && r.data.player2 === myName) {
-    gameId = r.data.game_id;
-    myPlayer = 2;
-    await checkAndProceed(r.data);
-    return;
+    if (!stale(r.data.status)) {
+      gameId = r.data.game_id; myPlayer = 2;
+      await checkAndProceed(r.data); return;
+    }
+    // Stale — recreate preserving original player order so both end up in same game
+    await api('POST', '/games', { player1: oppName, player2: myName });
+    gameId = `${oppName}-${myName}`; myPlayer = 2;
+    const ns = await api('GET', `/games/${gameId}`);
+    if (ns.ok) { await checkAndProceed(ns.data); return; }
   }
 
-  // Create new game
+  // No existing game — create fresh
   r = await api('POST', '/games', { player1: myName, player2: oppName });
   if (!r.ok) {
     errEl.textContent = r.data.error || 'Failed to create game.';
     document.getElementById('btn-start').disabled = false;
     return;
   }
-  gameId = r.data.game_id;
-  myPlayer = 1;
-
-  // Fetch fresh state
+  gameId = r.data.game_id; myPlayer = 1;
   const state = await api('GET', `/games/${gameId}`);
   if (state.ok) {
     await checkAndProceed(state.data);
@@ -710,8 +723,6 @@ function buildPlacementGrid() {
       cell.className = 'cell';
       cell.dataset.r = r;
       cell.dataset.c = c;
-      cell.addEventListener('mouseenter', () => onPlacementHover(r, c));
-      cell.addEventListener('mouseleave', () => clearHover());
       cell.addEventListener('click', () => onPlacementClick(r, c));
       grid.appendChild(cell);
     }
@@ -773,9 +784,8 @@ function onPlacementClick(r, c) {
   // Paint placed cells
   cells.forEach(({ row, col }) => {
     const el = getPlacementCell(row, col);
-    if (el) { el.classList.remove('preview-valid', 'preview-invalid'); el.classList.add('ship'); }
+    if (el) el.classList.add('ship');
   });
-  hoverCells = [];
 
   shipIdx++;
   updateShipList();
@@ -1032,9 +1042,13 @@ async function poll() {
 
   if (status === 'Cancelled') {
     stopPolling();
+    if (state.boards) {
+      if (state.boards[myName])  renderBoard('my-grid',  state.boards[myName],  false);
+      if (state.boards[oppName]) renderBoard('opp-grid', state.boards[oppName], true);
+    }
     const by = state.cancelled_by;
     let msg;
-    if (by === myName)       msg = 'You quit the game.';
+    if (by === myName)         msg = 'You quit the game.';
     else if (by === 'timeout') msg = 'Game ended — no activity for 10 minutes.';
     else                       msg = (by || 'Opponent') + ' quit the game.';
     showCancelOverlay(msg);
