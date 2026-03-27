@@ -2,13 +2,80 @@
 Battleship REST API server.
 Run with: python server.py
 Listens on port 5000 by default.
+
+For CGI deployment set the GAME_DB environment variable to a writable SQLite
+path, e.g. GAME_DB=/home/user/battleship.db
 """
 
+import json
+import os
+import sqlite3
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
-games = {}
+
+
+class GameStore:
+    """Dict-like store backed by SQLite when GAME_DB env var is set."""
+
+    def __init__(self):
+        self._mem = {}
+        self._db_path = os.environ.get('GAME_DB')
+        if self._db_path:
+            self._init_db()
+
+    def _init_db(self):
+        con = sqlite3.connect(self._db_path)
+        con.execute(
+            'CREATE TABLE IF NOT EXISTS games (gid TEXT PRIMARY KEY, data TEXT)'
+        )
+        con.commit()
+        con.close()
+
+    def _con(self):
+        return sqlite3.connect(self._db_path)
+
+    def __contains__(self, gid):
+        if not self._db_path:
+            return gid in self._mem
+        con = self._con()
+        row = con.execute('SELECT 1 FROM games WHERE gid=?', (gid,)).fetchone()
+        con.close()
+        return row is not None
+
+    def __getitem__(self, gid):
+        if not self._db_path:
+            return self._mem[gid]
+        con = self._con()
+        row = con.execute('SELECT data FROM games WHERE gid=?', (gid,)).fetchone()
+        con.close()
+        if row is None:
+            raise KeyError(gid)
+        return json.loads(row[0])
+
+    def __setitem__(self, gid, value):
+        if not self._db_path:
+            self._mem[gid] = value
+            return
+        con = self._con()
+        con.execute(
+            'INSERT OR REPLACE INTO games (gid, data) VALUES (?, ?)',
+            (gid, json.dumps(value)),
+        )
+        con.commit()
+        con.close()
+
+    def clear(self):
+        self._mem.clear()
+        if self._db_path:
+            con = self._con()
+            con.execute('DELETE FROM games')
+            con.commit()
+            con.close()
+
+
+games = GameStore()
 
 
 @app.errorhandler(Exception)
@@ -34,9 +101,9 @@ def parse_loc(loc):
 def ship_cells(location, orientation, length):
     r, c = parse_loc(location)
     if orientation.lower().startswith('v'):
-        return [(r + i, c) for i in range(length)]
+        return [[r + i, c] for i in range(length)]
     else:
-        return [(r, c + i) for i in range(length)]
+        return [[r, c + i] for i in range(length)]
 
 
 @app.route('/games', methods=['POST'])
@@ -91,13 +158,13 @@ def place_ships(gid, player):
         except Exception:
             return jsonify({'error': 'Invalid location format'}), 400
 
-        for r, c in cells:
+        for (r, c) in cells:
             if not (1 <= r <= 10 and 1 <= c <= 10):
                 return jsonify({'error': 'Off board'}), 400
-        for r, c in cells:
+        for (r, c) in cells:
             if board[r-1][c-1] != ' ':
                 return jsonify({'error': 'Overlap'}), 400
-        for r, c in cells:
+        for (r, c) in cells:
             board[r-1][c-1] = info['symbol']
 
         ships[stype] = {
@@ -111,6 +178,7 @@ def place_ships(gid, player):
     g['ships_placed'][player] = True
     if all(g['ships_placed'].values()):
         g['status'] = 'In Progress'
+    games[gid] = g
     return jsonify({'success': True})
 
 
@@ -149,12 +217,12 @@ def make_move(gid):
 
     if cell in ('B', 'C'):
         for stype, ship in g['ships'][opp].items():
-            if (r, c) in ship['cells']:
-                ship['hits'].append((r, c))
+            if [r, c] in ship['cells']:
+                ship['hits'].append([r, c])
                 if len(ship['hits']) == ship['length']:
                     ship['status'] = 'Destroyed'
                     result = 'Destroyed'
-                    for sr, sc in ship['cells']:
+                    for (sr, sc) in ship['cells']:
                         g['boards'][opp][sr-1][sc-1] = '@'
                 else:
                     ship['status'] = 'Hit'
@@ -173,6 +241,7 @@ def make_move(gid):
         g['turn'] += 1
         g['current_turn'] = opp
 
+    games[gid] = g
     return jsonify({'result': result})
 
 
