@@ -84,8 +84,11 @@ def handle_error(e):
     return jsonify({'error': str(e)}), code
 
 SHIP_INFO = {
+    'Carrier':    {'length': 5, 'symbol': 'A'},
     'Battleship': {'length': 4, 'symbol': 'B'},
     'Cruiser':    {'length': 3, 'symbol': 'C'},
+    'Submarine':  {'length': 3, 'symbol': 'S'},
+    'Destroyer':  {'length': 2, 'symbol': 'D'},
 }
 
 
@@ -215,7 +218,7 @@ def make_move(gid):
     cell = g['boards'][opp][r-1][c-1]
     result = 'Miss'
 
-    if cell in ('B', 'C'):
+    if cell in {info['symbol'] for info in SHIP_INFO.values()}:
         for stype, ship in g['ships'][opp].items():
             if [r, c] in ship['cells']:
                 ship['hits'].append([r, c])

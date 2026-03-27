@@ -14,8 +14,14 @@ import argparse
 
 DEFAULT_SERVER = 'http://localhost:5000'
 
-SHIP_TYPES = [('Battleship', 4), ('Cruiser', 3)]
-SHIP_SYMBOLS = {'Battleship': 'B', 'Cruiser': 'C'}
+SHIP_TYPES = [
+    ('Carrier',    5),
+    ('Battleship', 4),
+    ('Cruiser',    3),
+    ('Submarine',  3),
+    ('Destroyer',  2),
+]
+SHIP_SYMBOLS = {'Carrier': 'A', 'Battleship': 'B', 'Cruiser': 'C', 'Submarine': 'S', 'Destroyer': 'D'}
 
 
 def clear():
@@ -65,7 +71,7 @@ def validate_local(board, loc, orient, length):
 
 
 def board_lines(board, hide_ships=False, label=''):
-    sym = {' ': '.', 'B': 'B', 'C': 'C', '@': '@', 'X': 'X'}
+    sym = {' ': '.', 'A': 'A', 'B': 'B', 'C': 'C', 'S': 'S', 'D': 'D', '@': '@', 'X': 'X'}
     if hide_ships:
         sym['B'] = '.'
         sym['C'] = '.'

@@ -11,12 +11,18 @@ from behave import given, when, then, step
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 DEFAULT_OPP_SHIPS = [
+    {'type': 'Carrier',    'location': '6,1', 'orientation': 'Horizontal'},  # (6,1)-(6,5)
     {'type': 'Battleship', 'location': '6,6', 'orientation': 'Horizontal'},  # (6,6)-(6,9)
-    {'type': 'Cruiser',    'location': '8,7', 'orientation': 'Horizontal'},  # (8,7)-(8,9)
+    {'type': 'Cruiser',    'location': '7,1', 'orientation': 'Horizontal'},  # (7,1)-(7,3)
+    {'type': 'Submarine',  'location': '8,1', 'orientation': 'Horizontal'},  # (8,1)-(8,3)
+    {'type': 'Destroyer',  'location': '9,1', 'orientation': 'Horizontal'},  # (9,1)-(9,2)
 ]
 DEFAULT_MY_SHIPS = [
-    {'type': 'Battleship', 'location': '1,1', 'orientation': 'Vertical'},
-    {'type': 'Cruiser',    'location': '2,2', 'orientation': 'Horizontal'},
+    {'type': 'Carrier',    'location': '1,1', 'orientation': 'Horizontal'},  # (1,1)-(1,5)
+    {'type': 'Battleship', 'location': '2,1', 'orientation': 'Horizontal'},  # (2,1)-(2,4)
+    {'type': 'Cruiser',    'location': '3,1', 'orientation': 'Horizontal'},  # (3,1)-(3,3)
+    {'type': 'Submarine',  'location': '4,1', 'orientation': 'Horizontal'},  # (4,1)-(4,3)
+    {'type': 'Destroyer',  'location': '1,7', 'orientation': 'Horizontal'},  # (1,7)-(1,8)
 ]
 
 STATUS_ALIASES = {

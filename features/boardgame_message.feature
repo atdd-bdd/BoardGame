@@ -40,8 +40,11 @@ Feature: Board Game Protocol
       | Ken-George | In Progress | George       |
     And my ships are all destroyed
       | Type       | Length | Location | Orientation |
-      | Battleship | 4      | 1,1      | Vertical    |
-      | Cruiser    | 3      | 2,2      | Horizontal  |
+      | Carrier    | 5      | 1,1      | Horizontal  |
+      | Battleship | 4      | 2,1      | Horizontal  |
+      | Cruiser    | 3      | 3,1      | Horizontal  |
+      | Submarine  | 3      | 4,1      | Horizontal  |
+      | Destroyer  | 2      | 1,7      | Horizontal  |
     Then game is now
       | Status | Winner |
       | Over   | George |
