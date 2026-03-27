@@ -465,6 +465,7 @@
 <div id="placement-phase" class="hidden">
   <div class="placement-controls">
     <button class="btn-secondary orient-btn" id="btn-orient" onclick="toggleOrientation()">↔ Horizontal</button>
+    <button class="btn-secondary" id="btn-undo" onclick="undoLastShip()" disabled>↩ Undo</button>
     <button class="btn-secondary" onclick="placeRandom()">🎲 Random</button>
     <button class="btn-secondary" onclick="quitGame()">✕ Quit</button>
   </div>
@@ -682,6 +683,24 @@ async function checkAndProceed(state) {
 // ─────────────────────────────────────────────
 // PLACEMENT PHASE
 // ─────────────────────────────────────────────
+function undoLastShip() {
+  if (placedShips.length === 0) return;
+  placedShips.pop();
+  shipIdx--;
+  buildPlacementGrid();
+  placedShips.forEach(s => {
+    const { row, col } = locToCell(s.location);
+    const ship = SHIPS.find(x => x.type === s.type);
+    shipCells(row, col, ship.length, s.orientation).forEach(({ row: r, col: c }) => {
+      const el = getPlacementCell(r, c);
+      if (el) el.classList.add('ship');
+    });
+  });
+  updateShipList();
+  updateHint();
+  document.getElementById('btn-undo').disabled = placedShips.length === 0;
+}
+
 function enterPlacementPhase() {
   shipIdx = 0;
   placedShips = [];
@@ -690,6 +709,7 @@ function enterPlacementPhase() {
   buildPlacementGrid();
   updateShipList();
   updateHint();
+  document.getElementById('btn-undo').disabled = true;
 }
 
 function buildPlacementGrid() {
@@ -788,6 +808,7 @@ function onPlacementClick(r, c) {
   shipIdx++;
   updateShipList();
   updateHint();
+  document.getElementById('btn-undo').disabled = false;
 
   if (shipIdx >= SHIPS.length) {
     submitShips();
