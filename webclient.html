@@ -257,6 +257,12 @@
     box-shadow: 0 0 6px rgba(56,189,248,0.5);
   }
 
+  .cell.selected {
+    background: #0e3d7a;
+    border-color: #60c8ff;
+    box-shadow: 0 0 10px rgba(56,189,248,0.8);
+  }
+
   /* ── GAME PHASE ── */
   #game-phase {
     display: flex;
@@ -556,6 +562,7 @@ let hoverCells = [];
 let pollTimer = null;
 let firingLocked = false;
 let msgCount = 0;
+let selectedLoc = null; // currently highlighted target cell (e.g. 'C5')
 
 // ─────────────────────────────────────────────
 // Coordinate helpers
@@ -950,10 +957,29 @@ function renderBoard(gridId, board, isOpponent) {
       }
     }
   }
+  // Re-apply selected highlight if this is the opponent grid
+  if (isOpponent && selectedLoc) {
+    const { row, col } = locToCell(selectedLoc);
+    const el = getGameCell(gridId, row, col);
+    if (el && !el.classList.contains('hit') && !el.classList.contains('miss')) {
+      el.classList.add('selected');
+    } else {
+      selectedLoc = null;
+      document.getElementById('fire-input').value = '';
+    }
+  }
 }
 
 function updateOppBoardInteractivity(isMyTurn, status) {
   const active = isMyTurn && status === 'In Progress';
+  // Clear selection when it's no longer our turn
+  if (!active && selectedLoc) {
+    const { row, col } = locToCell(selectedLoc);
+    const el = getGameCell('opp-grid', row, col);
+    if (el) el.classList.remove('selected');
+    selectedLoc = null;
+    document.getElementById('fire-input').value = '';
+  }
   for (let r = 1; r <= 10; r++) {
     for (let c = 1; c <= 10; c++) {
       const el = getGameCell('opp-grid', r, c);
@@ -1180,13 +1206,24 @@ async function quitGame() {
   showCancelOverlay('You quit the game.');
 }
 
-async function fireAt(r, c) {
+function fireAt(r, c) {
   const el = getGameCell('opp-grid', r, c);
-  if (!el) return;
-  if (el.classList.contains('hit') || el.classList.contains('miss')) return;
+  if (!el || el.classList.contains('hit') || el.classList.contains('miss')) return;
   if (!el.classList.contains('targetable')) return;
 
-  await doFire(cellToLoc(r, c));
+  // Clear previous selection
+  if (selectedLoc) {
+    const { row, col } = locToCell(selectedLoc);
+    const prev = getGameCell('opp-grid', row, col);
+    if (prev) prev.classList.remove('selected');
+  }
+
+  // Highlight new selection and populate input
+  el.classList.add('selected');
+  selectedLoc = cellToLoc(r, c);
+  const input = document.getElementById('fire-input');
+  input.value = selectedLoc;
+  input.focus();
 }
 
 async function fireLoc() {
@@ -1196,8 +1233,15 @@ async function fireLoc() {
     addMessage('Invalid location format. Use A-J followed by 1-10.', 'system');
     return;
   }
-  await doFire(loc);
+  // Clear selection
+  if (selectedLoc) {
+    const { row, col } = locToCell(selectedLoc);
+    const el = getGameCell('opp-grid', row, col);
+    if (el) el.classList.remove('selected');
+    selectedLoc = null;
+  }
   input.value = '';
+  await doFire(loc);
 }
 
 async function doFire(loc) {
