@@ -230,11 +230,11 @@
   .cell.hit::after { content: '✕'; font-size: 0.9rem; }
 
   .cell.miss {
-    background: #111827;
-    border-color: #1f2937;
-    color: #4b5563;
+    background: #0a1e30;
+    border-color: #3a7090;
+    color: #7aadcc;
   }
-  .cell.miss::after { content: '·'; font-size: 1.4rem; line-height: 0; }
+  .cell.miss::after { content: '○'; font-size: 0.85rem; }
 
   /* placement preview */
   .cell.preview-valid {
@@ -491,6 +491,7 @@
 <!-- ══ GAME PHASE ══ -->
 <div id="game-phase" class="hidden">
   <div class="status-bar" id="status-bar">Loading…</div>
+  <div id="debug-bar" style="font-size:0.7rem;color:#64748b;text-align:center;font-family:monospace;min-height:1rem"></div>
 
   <div id="game-names" style="font-size:0.85rem;color:#64748b;text-align:center;letter-spacing:0.05em"></div>
 
@@ -1105,12 +1106,17 @@ async function poll() {
 
   // Render boards
   if (state.boards) {
-    if (state.boards[myName]) {
-      renderBoard('my-grid', state.boards[myName], false);
-    }
-    if (state.boards[oppName]) {
-      renderBoard('opp-grid', state.boards[oppName], true);
-    }
+    const myBoard  = state.boards[myName];
+    const oppBoard = state.boards[oppName];
+    const shots = oppBoard ? oppBoard.flat().filter(c => c==='@'||c==='X').length : 0;
+    const myHits = myBoard  ? myBoard.flat().filter(c => c==='@'||c==='X').length : 0;
+    // Debug: show what the server returned
+    document.getElementById('debug-bar').textContent =
+      `[debug] myName=${myName} oppName=${oppName} ` +
+      `myBoard=${myBoard ? 'ok' : 'MISSING'} oppBoard=${oppBoard ? 'ok' : 'MISSING'} ` +
+      `shots-on-opp=${shots} shots-on-me=${myHits} turn=${state.turn} mine=${state.current_turn===myName}`;
+    if (myBoard)  renderBoard('my-grid',  myBoard,  false);
+    if (oppBoard) renderBoard('opp-grid', oppBoard, true);
   }
 
   // Interactivity
