@@ -10,6 +10,7 @@ path, e.g. GAME_DB=/home/user/battleship.db
 import json
 import os
 import sqlite3
+import time
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 
@@ -127,6 +128,8 @@ def create_game():
         'boards': {p1: empty_board(), p2: empty_board()},
         'ships_placed': {p1: False, p2: False},
         'moves': [],
+        'last_activity': time.time(),
+        'cancelled_by': None,
     }
     return jsonify({'game_id': gid})
 
@@ -135,7 +138,25 @@ def create_game():
 def get_game(gid):
     if gid not in games:
         return jsonify({'error': 'Not found'}), 404
-    return jsonify(games[gid])
+    g = games[gid]
+    if g['status'] in ('Setup', 'In Progress'):
+        if time.time() - g.get('last_activity', time.time()) > 600:
+            g['status'] = 'Cancelled'
+            g['cancelled_by'] = 'timeout'
+            games[gid] = g
+    return jsonify(g)
+
+
+@app.route('/games/<gid>', methods=['DELETE'])
+def cancel_game(gid):
+    if gid not in games:
+        return jsonify({'error': 'Not found'}), 404
+    g = games[gid]
+    d = request.get_json(force=True, silent=True) or {}
+    g['status'] = 'Cancelled'
+    g['cancelled_by'] = d.get('player', 'unknown')
+    games[gid] = g
+    return jsonify({'ok': True})
 
 
 @app.route('/games/<gid>/ships/<player>', methods=['POST'])
@@ -181,6 +202,7 @@ def place_ships(gid, player):
     g['ships'][player] = ships
     g['boards'][player] = board
     g['ships_placed'][player] = True
+    g['last_activity'] = time.time()
     if all(g['ships_placed'].values()):
         g['status'] = 'In Progress'
     games[gid] = g
@@ -238,6 +260,7 @@ def make_move(gid):
         g['boards'][opp][r-1][c-1] = 'X'
 
     g['moves'].append({'player': player, 'location': location, 'result': result, 'turn': g['turn']})
+    g['last_activity'] = time.time()
 
     if all(s['status'] == 'Destroyed' for s in g['ships'][opp].values()):
         g['status'] = 'Over'

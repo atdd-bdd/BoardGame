@@ -417,6 +417,7 @@
 
   .overlay-box.win { border-color: #22c55e; }
   .overlay-box.lose { border-color: #ef4444; }
+  .overlay-box.cancelled { border-color: #f59e0b; }
 
   .overlay-title {
     font-size: 2rem;
@@ -427,6 +428,7 @@
 
   .overlay-box.win .overlay-title { color: #86efac; }
   .overlay-box.lose .overlay-title { color: #f87171; }
+  .overlay-box.cancelled .overlay-title { color: #fcd34d; }
 
   .overlay-sub {
     color: #9ca3af;
@@ -462,6 +464,7 @@
   <div class="placement-controls">
     <button class="btn-secondary orient-btn" id="btn-orient" onclick="toggleOrientation()">↔ Horizontal</button>
     <button class="btn-secondary" onclick="placeRandom()">🎲 Random</button>
+    <button class="btn-secondary" onclick="quitGame()">✕ Quit</button>
   </div>
   <div class="placement-row">
     <div>
@@ -479,13 +482,15 @@
 <div id="game-phase" class="hidden">
   <div class="status-bar" id="status-bar">Loading…</div>
 
+  <div id="game-names" style="font-size:0.85rem;color:#64748b;text-align:center;letter-spacing:0.05em"></div>
+
   <div class="boards-row">
     <div class="board-wrap">
-      <div class="board-title">Your Board</div>
+      <div class="board-title" id="my-board-title">Your Board</div>
       <div class="board-grid" id="my-grid"></div>
     </div>
     <div class="board-wrap">
-      <div class="board-title">Opponent's Board</div>
+      <div class="board-title" id="opp-board-title">Opponent's Board</div>
       <div class="board-grid" id="opp-grid"></div>
     </div>
   </div>
@@ -495,6 +500,7 @@
            oninput="this.value=this.value.toUpperCase()"
            onkeydown="if(event.key==='Enter')fireLoc()" />
     <button class="btn-danger" id="btn-fire" onclick="fireLoc()">Fire!</button>
+    <button class="btn-secondary" onclick="quitGame()" style="margin-left:1rem">✕ Quit</button>
   </div>
 
   <div class="game-info-row">
@@ -870,8 +876,12 @@ async function submitShips() {
 // ─────────────────────────────────────────────
 function enterGamePhase() {
   show('game-phase');
+  document.getElementById('my-board-title').textContent  = myName + "'s Board";
+  document.getElementById('opp-board-title').textContent = oppName + "'s Board";
+  document.getElementById('game-names').textContent      = myName + ' vs ' + oppName;
   buildGameGrid('my-grid', false);
   buildGameGrid('opp-grid', true);
+  lastMoveCount = -1;
   startPolling();
 }
 
@@ -972,7 +982,7 @@ function renderShipHealth(ships) {
     // Count hits from ship info
     let hits = 0;
     if (info.status === 'Destroyed') hits = length;
-    else if (info.hits !== undefined) hits = info.hits;
+    else if (info.hits !== undefined) hits = info.hits.length;
 
     for (let i = 0; i < length; i++) {
       const dot = document.createElement('span');
@@ -1011,11 +1021,25 @@ let lastMoveCount = -1;
 
 async function poll() {
   const r = await api('GET', `/games/${gameId}`);
-  if (!r.ok) return;
+  if (!r.ok) {
+    if (r.status === 404) { stopPolling(); showCancelOverlay('Game not found.'); }
+    return;
+  }
 
   const state = r.data;
   const isMyTurn = state.current_turn === myName;
   const status = state.status;
+
+  if (status === 'Cancelled') {
+    stopPolling();
+    const by = state.cancelled_by;
+    let msg;
+    if (by === myName)       msg = 'You quit the game.';
+    else if (by === 'timeout') msg = 'Game ended — no activity for 10 minutes.';
+    else                       msg = (by || 'Opponent') + ' quit the game.';
+    showCancelOverlay(msg);
+    return;
+  }
 
   // Update status bar
   const sb = document.getElementById('status-bar');
@@ -1024,7 +1048,10 @@ async function poll() {
     sb.textContent = `Game Over — Winner: ${state.winner}`;
   } else if (status === 'Setup') {
     sb.className = 'status-bar';
-    sb.textContent = 'Waiting for both players to place ships…';
+    const placed = state.ships_placed || {};
+    const myPlaced  = placed[myName]  ? '✓' : '…';
+    const oppPlaced = placed[oppName] ? '✓' : '…';
+    sb.textContent = `Waiting for ships — ${myName}: ${myPlaced}  ${oppName}: ${oppPlaced}`;
   } else {
     if (isMyTurn) {
       sb.className = 'status-bar your-turn';
@@ -1053,9 +1080,12 @@ async function poll() {
     renderShipHealth(state.ships);
   }
 
-  // Message log: process new moves
+  // Message log: process new moves (skip history on first poll)
+  if (state.moves && lastMoveCount === -1) {
+    lastMoveCount = state.moves.length;
+  }
   if (state.moves && state.moves.length > lastMoveCount) {
-    const newMoves = state.moves.slice(lastMoveCount === -1 ? 0 : lastMoveCount);
+    const newMoves = state.moves.slice(lastMoveCount);
     newMoves.forEach(move => {
       const who = move.player === myName ? 'You' : oppName;
       const result = move.result || '';
@@ -1114,6 +1144,25 @@ function showOverlay(winner) {
     : `${winner} sank all your ships.`;
 
   overlay.classList.add('visible');
+}
+
+function showCancelOverlay(message) {
+  const overlay = document.getElementById('overlay');
+  const box = document.getElementById('overlay-box');
+  const title = document.getElementById('overlay-title');
+  const sub = document.getElementById('overlay-sub');
+
+  box.className = 'overlay-box cancelled';
+  title.textContent = 'Game Ended';
+  sub.textContent = message;
+  overlay.classList.add('visible');
+}
+
+async function quitGame() {
+  if (!confirm('Quit the game? This will end the game for both players.')) return;
+  stopPolling();
+  await api('DELETE', `/games/${gameId}`, { player: myName });
+  showCancelOverlay('You quit the game.');
 }
 
 async function fireAt(r, c) {
