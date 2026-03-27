@@ -148,7 +148,8 @@ def get_game(gid):
     g = games[gid]
     if g['status'] in ('Setup', 'In Progress'):
         now = time.time()
-        if now - g.get('last_activity', now) > 20:
+        limit = 120 if g['status'] == 'Setup' else 20
+        if now - g.get('last_activity', now) > limit:
             g['status'] = 'Cancelled'
             g['cancelled_by'] = 'timeout'
         else:

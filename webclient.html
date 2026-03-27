@@ -1087,7 +1087,7 @@ async function poll() {
     const by = state.cancelled_by;
     let msg;
     if (by === myName)         msg = 'You quit the game.';
-    else if (by === 'timeout') msg = 'Game ended — no activity for 20 seconds.';
+    else if (by === 'timeout') msg = 'Game ended — inactivity timeout.';
     else                       msg = (by || 'Opponent') + ' quit the game.';
     showCancelOverlay(msg);
     return;
