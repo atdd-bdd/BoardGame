@@ -11,18 +11,18 @@ from behave import given, when, then, step
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 DEFAULT_OPP_SHIPS = [
-    {'type': 'Carrier',    'location': '6,1', 'orientation': 'Horizontal'},  # (6,1)-(6,5)
-    {'type': 'Battleship', 'location': '6,6', 'orientation': 'Horizontal'},  # (6,6)-(6,9)
-    {'type': 'Cruiser',    'location': '7,1', 'orientation': 'Horizontal'},  # (7,1)-(7,3)
-    {'type': 'Submarine',  'location': '8,1', 'orientation': 'Horizontal'},  # (8,1)-(8,3)
-    {'type': 'Destroyer',  'location': '9,1', 'orientation': 'Horizontal'},  # (9,1)-(9,2)
+    {'type': 'Carrier',    'location': 'A6', 'orientation': 'Horizontal'},  # row 6 cols A-E
+    {'type': 'Battleship', 'location': 'F6', 'orientation': 'Horizontal'},  # row 6 cols F-I
+    {'type': 'Cruiser',    'location': 'A7', 'orientation': 'Horizontal'},  # row 7 cols A-C
+    {'type': 'Submarine',  'location': 'A8', 'orientation': 'Horizontal'},  # row 8 cols A-C
+    {'type': 'Destroyer',  'location': 'A9', 'orientation': 'Horizontal'},  # row 9 cols A-B
 ]
 DEFAULT_MY_SHIPS = [
-    {'type': 'Carrier',    'location': '1,1', 'orientation': 'Horizontal'},  # (1,1)-(1,5)
-    {'type': 'Battleship', 'location': '2,1', 'orientation': 'Horizontal'},  # (2,1)-(2,4)
-    {'type': 'Cruiser',    'location': '3,1', 'orientation': 'Horizontal'},  # (3,1)-(3,3)
-    {'type': 'Submarine',  'location': '4,1', 'orientation': 'Horizontal'},  # (4,1)-(4,3)
-    {'type': 'Destroyer',  'location': '1,7', 'orientation': 'Horizontal'},  # (1,7)-(1,8)
+    {'type': 'Carrier',    'location': 'A1', 'orientation': 'Horizontal'},  # row 1 cols A-E
+    {'type': 'Battleship', 'location': 'A2', 'orientation': 'Horizontal'},  # row 2 cols A-D
+    {'type': 'Cruiser',    'location': 'A3', 'orientation': 'Horizontal'},  # row 3 cols A-C
+    {'type': 'Submarine',  'location': 'A4', 'orientation': 'Horizontal'},  # row 4 cols A-C
+    {'type': 'Destroyer',  'location': 'G1', 'orientation': 'Horizontal'},  # row 1 cols G-H
 ]
 
 STATUS_ALIASES = {
@@ -65,7 +65,7 @@ def parse_board(table):
         r = int(row[table.headings[0]]) - 1
         for ch in col_hdrs:
             cell = row[ch].strip()
-            board[r][int(ch) - 1] = cell if cell else ' '
+            board[r][ord(ch) - ord('A')] = cell if cell else ' '
     return board
 
 
@@ -122,7 +122,9 @@ def ensure_my_turn(context):
 
 
 def ship_cells(location, orientation, length):
-    r, c = map(int, location.split(','))
+    loc = location.strip().upper()
+    c = ord(loc[0]) - ord('A') + 1
+    r = int(loc[1:])
     if orientation.lower().startswith('v'):
         return [(r + i, c) for i in range(length)]
     return [(r, c + i) for i in range(length)]
@@ -469,7 +471,7 @@ def step_my_ships_all_destroyed(context):
             ensure_opp_turn(context)
             resp = context.client.post(
                 f'/games/{context.game_id}/moves',
-                json={'player': context.opp_name, 'location': f'{r},{c}'},
+                json={'player': context.opp_name, 'location': f'{chr(ord("A")+c-1)}{r}'},
             )
             assert resp.status_code == 200, \
                 f"Attack ({r},{c}) failed: {resp.get_json()}"

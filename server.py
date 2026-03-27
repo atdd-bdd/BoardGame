@@ -97,8 +97,10 @@ def empty_board():
 
 
 def parse_loc(loc):
-    r, c = loc.strip().split(',')
-    return int(r), int(c)
+    loc = loc.strip().upper()
+    c = ord(loc[0]) - ord('A') + 1
+    r = int(loc[1:])
+    return r, c
 
 
 def ship_cells(location, orientation, length):
@@ -224,7 +226,7 @@ def make_move(gid):
                 ship['hits'].append([r, c])
                 if len(ship['hits']) == ship['length']:
                     ship['status'] = 'Destroyed'
-                    result = 'Destroyed'
+                    result = f'{stype} Destroyed'
                     for (sr, sc) in ship['cells']:
                         g['boards'][opp][sr-1][sc-1] = '@'
                 else:

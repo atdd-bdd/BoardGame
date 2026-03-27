@@ -41,8 +41,10 @@ def api_json(resp):
 
 def parse_loc(s):
     try:
-        parts = s.strip().split(',')
-        return int(parts[0]), int(parts[1])
+        s = s.strip().upper()
+        c = ord(s[0]) - ord('A') + 1
+        r = int(s[1:])
+        return r, c
     except Exception:
         return None, None
 
@@ -60,7 +62,7 @@ def get_cells(loc, orient, length):
 def validate_local(board, loc, orient, length):
     cells = get_cells(loc, orient, length)
     if cells is None:
-        return "Invalid format — use row,col (e.g. 3,5)"
+        return "Invalid format — use letter + number (e.g. C5)"
     for r, c in cells:
         if not (1 <= r <= 10 and 1 <= c <= 10):
             return "Off board"
@@ -73,9 +75,10 @@ def validate_local(board, loc, orient, length):
 def board_lines(board, hide_ships=False, label=''):
     sym = {' ': '.', 'A': 'A', 'B': 'B', 'C': 'C', 'S': 'S', 'D': 'D', '@': '@', 'X': 'X'}
     if hide_ships:
-        sym['B'] = '.'
-        sym['C'] = '.'
-    lines = [f'  {label}', '    ' + ''.join(f'{c:3}' for c in range(1, 11))]
+        for k in ['A', 'B', 'C', 'S', 'D']:
+            sym[k] = '.'
+    col_hdrs = ''.join(f'{chr(ord("A")+i):3}' for i in range(10))
+    lines = [f'  {label}', f'    {col_hdrs}']
     for r in range(10):
         row = ''.join(f'{sym.get(board[r][c], "."):3}' for c in range(10))
         lines.append(f'{r+1:2}  {row}')
@@ -111,7 +114,7 @@ def place_ships_phase(server, game_id, my_name):
             for line in board_lines(local_board, label='YOUR BOARD'):
                 print(line)
             print(f"\nPlace {ship_type} (length {length}):")
-            loc = input("  Location (row,col): ").strip()
+            loc = input("  Location (e.g. A3): ").strip().upper()
             raw = input("  Orientation (V/H): ").strip().upper()
             orient = 'Vertical' if raw == 'V' else 'Horizontal'
 
@@ -186,10 +189,10 @@ def game_loop(server, game_id, my_name):
         if game['current_turn'] == my_name:
             print()
             while True:
-                target = input("Your move (row,col): ").strip()
+                target = input("Your move (e.g. C5): ").strip().upper()
                 r, c = parse_loc(target)
                 if r is None or not (1 <= r <= 10 and 1 <= c <= 10):
-                    print("  Invalid — use row,col between 1 and 10 (e.g. 3,5)")
+                    print("  Invalid — use letter A-J followed by number 1-10 (e.g. C5)")
                     continue
                 try:
                     resp = requests.post(

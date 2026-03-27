@@ -18,18 +18,18 @@ Feature: Board Game Protocol
       | Game ID    | Status      | Current Turn |
       | Ken-George | In Progress | Ken          |
     When player enters
-      | Location | 2,3 |
+      | Location | C2 |
     Then message sent
       | Player | Move | Result |
-      | Ken    | 2,3  | Miss   |
+      | Ken    | C2   | Miss   |
     Then game is now
       | Status      | Current Turn |
       | In Progress | George       |
     When other player enters
-      | Location | 4,5 |
+      | Location | E4 |
     Then message sent
       | Player | Move | Result |
-      | George | 4,5  | Miss   |
+      | George | E4   | Miss   |
     Then game is now
       | Status      | Current Turn |
       | In Progress | Ken          |
@@ -40,11 +40,11 @@ Feature: Board Game Protocol
       | Ken-George | In Progress | George       |
     And my ships are all destroyed
       | Type       | Length | Location | Orientation |
-      | Carrier    | 5      | 1,1      | Horizontal  |
-      | Battleship | 4      | 2,1      | Horizontal  |
-      | Cruiser    | 3      | 3,1      | Horizontal  |
-      | Submarine  | 3      | 4,1      | Horizontal  |
-      | Destroyer  | 2      | 1,7      | Horizontal  |
+      | Carrier    | 5      | A1       | Horizontal  |
+      | Battleship | 4      | A2       | Horizontal  |
+      | Cruiser    | 3      | A3       | Horizontal  |
+      | Submarine  | 3      | A4       | Horizontal  |
+      | Destroyer  | 2      | G1       | Horizontal  |
     Then game is now
       | Status | Winner |
       | Over   | George |
