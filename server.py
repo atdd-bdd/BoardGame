@@ -147,10 +147,13 @@ def get_game(gid):
         return jsonify({'error': 'Not found'}), 404
     g = games[gid]
     if g['status'] in ('Setup', 'In Progress'):
-        if time.time() - g.get('last_activity', time.time()) > 20:
+        now = time.time()
+        if now - g.get('last_activity', now) > 20:
             g['status'] = 'Cancelled'
             g['cancelled_by'] = 'timeout'
-            games[gid] = g
+        else:
+            g['last_activity'] = now
+        games[gid] = g
     return jsonify(g)
 
 
@@ -209,7 +212,6 @@ def place_ships(gid, player):
     g['ships'][player] = ships
     g['boards'][player] = board
     g['ships_placed'][player] = True
-    g['last_activity'] = time.time()
     if all(g['ships_placed'].values()):
         g['status'] = 'In Progress'
     games[gid] = g
@@ -267,7 +269,6 @@ def make_move(gid):
         g['boards'][opp][r-1][c-1] = 'X'
 
     g['moves'].append({'player': player, 'location': location, 'result': result, 'turn': g['turn']})
-    g['last_activity'] = time.time()
 
     if all(s['status'] == 'Destroyed' for s in g['ships'][opp].values()):
         g['status'] = 'Over'
