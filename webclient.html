@@ -270,7 +270,7 @@
     align-items: center;
     gap: 1rem;
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
     padding: 0 1rem 2rem;
   }
 
@@ -296,11 +296,12 @@
     50% { box-shadow: 0 0 0 4px rgba(34,197,94,0.2); }
   }
 
-  .boards-row {
+  .game-main-row {
     display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-start;
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   .fire-row {
@@ -323,23 +324,15 @@
   }
   .fire-row input:focus { border-color: #38bdf8; }
 
-  .game-info-row {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-  }
 
   /* ship health panel */
   .ship-health-panel {
     background: #0d1f33;
     border: 1px solid #1e3a5f;
     border-radius: 8px;
-    padding: 0.75rem 1rem;
-    min-width: 220px;
-    flex: 1;
-    max-width: 280px;
+    padding: 0.75rem 0.75rem;
+    flex: 0 0 140px;
+    width: 140px;
   }
 
   .panel-title {
@@ -382,11 +375,10 @@
     background: #0d1f33;
     border: 1px solid #1e3a5f;
     border-radius: 8px;
-    padding: 0.75rem 1rem;
-    flex: 1;
-    max-width: 340px;
-    min-width: 220px;
-    max-height: 220px;
+    padding: 0.75rem 0.75rem;
+    flex: 0 0 140px;
+    width: 140px;
+    max-height: 390px;
     overflow-y: auto;
   }
 
@@ -495,7 +487,11 @@
 
   <div id="game-names" style="font-size:0.85rem;color:#64748b;text-align:center;letter-spacing:0.05em"></div>
 
-  <div class="boards-row">
+  <div class="game-main-row">
+    <div class="ship-health-panel">
+      <div class="panel-title">Your Ships</div>
+      <div id="ship-health-list"></div>
+    </div>
     <div class="board-wrap">
       <div class="board-title" id="my-board-title">Your Board</div>
       <div class="board-grid" id="my-grid"></div>
@@ -503,6 +499,9 @@
     <div class="board-wrap">
       <div class="board-title" id="opp-board-title">Opponent's Board</div>
       <div class="board-grid" id="opp-grid"></div>
+    </div>
+    <div class="message-log" id="message-log">
+      <div class="panel-title">Message Log</div>
     </div>
   </div>
 
@@ -512,16 +511,6 @@
            onkeydown="if(event.key==='Enter')fireLoc()" />
     <button class="btn-danger" id="btn-fire" onclick="fireLoc()">Fire!</button>
     <button class="btn-secondary" onclick="quitGame()" style="margin-left:1rem">✕ Quit</button>
-  </div>
-
-  <div class="game-info-row">
-    <div class="ship-health-panel">
-      <div class="panel-title">Your Ships</div>
-      <div id="ship-health-list"></div>
-    </div>
-    <div class="message-log" id="message-log">
-      <div class="panel-title">Message Log</div>
-    </div>
   </div>
 </div>
 
