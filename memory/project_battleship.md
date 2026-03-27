@@ -28,6 +28,7 @@ Hit → `"Hit"`, Miss → `"Miss"`, ship sunk → `"<ShipType> Destroyed"` (e.g.
 ## Key files
 - `server.py` — Flask REST API; `GameStore` class uses in-memory dict locally or SQLite when `GAME_DB` env var is set; port 5000
 - `client.py` — text-mode client, defaults to `http://localhost:5000`
+- `webclient.html` — single-file browser client; dark ocean theme; vanilla JS polling every 2s; ship placement UI; Quit button
 - `app.cgi` — CGI entry point for DreamHost (sets `GAME_DB=/home/kenpugh/battleship.db`)
 - `.htaccess` — Apache rewrite rules routing all requests through app.cgi
 - `deploy/do_deploy.py` — upload + setup script; run with `python deploy/do_deploy.py '<password>'`
@@ -35,7 +36,12 @@ Hit → `"Hit"`, Miss → `"Miss"`, ship sunk → `"<ShipType> Destroyed"` (e.g.
 - `requirements.txt`, `behave.ini`, `features/boardgame.feature`, `features/boardgame_message.feature`, `features/environment.py`, `features/steps/game_steps.py`
 
 ## Key API endpoints
-`POST /games`, `GET /games/{id}`, `POST /games/{id}/ships/{player}`, `POST /games/{id}/moves`
+`POST /games`, `GET /games/{id}`, `DELETE /games/{id}`, `POST /games/{id}/ships/{player}`, `POST /games/{id}/moves`
+
+## Game cancellation / timeout
+- `DELETE /games/{id}` with `{"player": name}` sets `status="Cancelled"`, `cancelled_by=name`
+- `GET /games/{id}` auto-cancels (sets `cancelled_by="timeout"`) if no activity for 10 minutes
+- Both clients detect `status="Cancelled"` on next poll and show an overlay with the reason
 
 ## DreamHost deployment
 - SSH: kenpugh@boardgame.this-is-only-a-test.com port 22
