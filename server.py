@@ -147,7 +147,7 @@ def get_game(gid):
         return jsonify({'error': 'Not found'}), 404
     g = games[gid]
     if g['status'] in ('Setup', 'In Progress'):
-        if time.time() - g.get('last_activity', time.time()) > 600:
+        if time.time() - g.get('last_activity', time.time()) > 20:
             g['status'] = 'Cancelled'
             g['cancelled_by'] = 'timeout'
             games[gid] = g

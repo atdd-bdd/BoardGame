@@ -512,7 +512,7 @@ async function poll() {
     stopPolling();
     const by  = game.cancelled_by;
     const msg = by === myName         ? 'You quit the game.'
-              : by === 'timeout'      ? 'Game ended \u2014 no activity for 10 minutes.'
+              : by === 'timeout'      ? 'Game ended \u2014 no activity for 20 seconds.'
               : (by || 'Opponent') + ' quit the game.';
     showEndMsg(msg);
     return;
