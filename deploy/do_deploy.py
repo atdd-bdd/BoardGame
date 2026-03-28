@@ -8,7 +8,7 @@ from pathlib import Path
 
 HOST = 'boardgame.this-is-only-a-test.com'
 PORT = 22
-USER = 'kenpugh'
+USER = os.environ.get('DEPLOY_USER', '')
 PASS = sys.argv[1] if len(sys.argv) > 1 else ''
 
 REMOTE_DIR = f'/home/{USER}/boardgame.this-is-only-a-test.com'
