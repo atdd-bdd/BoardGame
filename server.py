@@ -112,6 +112,14 @@ def ship_cells(location, orientation, length):
         return [[r, c + i] for i in range(length)]
 
 
+@app.route('/')
+@app.route('/index.html')
+def index_page():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html')
+    with open(path) as f:
+        return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
 @app.route('/player')
 def player_page():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'player.html')
