@@ -127,6 +127,14 @@ def player_page():
         return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
+@app.route('/mobile')
+@app.route('/mobile.html')
+def mobile_page():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mobile.html')
+    with open(path) as f:
+        return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
 @app.route('/games', methods=['POST'])
 def create_game():
     d = request.get_json(force=True, silent=True)

@@ -23,6 +23,7 @@ FILES = [
     ('index.html',                f'{REMOTE_DIR}/index.html'),
     ('webclient.html',            f'{REMOTE_DIR}/webclient.html'),
     ('player.html',               f'{REMOTE_DIR}/player.html'),
+    ('mobile.html',               f'{REMOTE_DIR}/mobile.html'),
     ('deploy/setup_dreamhost.sh', f'{REMOTE_DIR}/deploy/setup_dreamhost.sh'),
 ]
 
