@@ -20,6 +20,7 @@ FILES = [
     ('app.cgi',                   f'{REMOTE_DIR}/app.cgi'),
     ('.htaccess',                 f'{REMOTE_DIR}/.htaccess'),
     ('requirements.txt',          f'{REMOTE_DIR}/requirements.txt'),
+    ('index.html',                f'{REMOTE_DIR}/index.html'),
     ('webclient.html',            f'{REMOTE_DIR}/webclient.html'),
     ('player.html',               f'{REMOTE_DIR}/player.html'),
     ('deploy/setup_dreamhost.sh', f'{REMOTE_DIR}/deploy/setup_dreamhost.sh'),

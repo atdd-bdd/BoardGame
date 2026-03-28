@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battleship — How to Play</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #060d1a;
+    color: #cdd9e5;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    padding-bottom: 4rem;
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    border-bottom: 1px solid #1e3a5f;
+    margin-bottom: 3rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #38bdf8;
+    text-shadow: 0 0 30px rgba(56,189,248,0.4);
+    margin-bottom: 0.5rem;
+  }
+
+  header p {
+    color: #64748b;
+    font-size: 1rem;
+  }
+
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* ── PLAY NOW BUTTONS ── */
+  .play-now {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .play-btn {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .play-btn.primary {
+    background: #1e3a5f;
+    color: #38bdf8;
+    border: 1px solid #2d5a8e;
+  }
+  .play-btn.primary:hover {
+    background: #2d5a8e;
+    box-shadow: 0 0 14px rgba(56,189,248,0.35);
+  }
+
+  .play-btn.secondary {
+    background: #111827;
+    color: #9ca3af;
+    border: 1px solid #1f2937;
+  }
+  .play-btn.secondary:hover {
+    background: #1f2937;
+    color: #cdd9e5;
+  }
+
+  /* ── SECTION CARDS ── */
+  .card {
+    background: #0d1f33;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #1a3050;
+  }
+
+  .card-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
+  .card-header h2 {
+    font-size: 1.25rem;
+    color: #38bdf8;
+    letter-spacing: 0.05em;
+  }
+
+  .card-header .badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    background: #0a1e30;
+    color: #64748b;
+    border: 1px solid #1a3050;
+  }
+
+  .card p {
+    color: #9ca3af;
+    margin-bottom: 1rem;
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  /* ── STEPS ── */
+  ol.steps {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  ol.steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    color: #9ca3af;
+  }
+
+  ol.steps li::before {
+    content: counter(step);
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    background: #1e3a5f;
+    color: #38bdf8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 0.1rem;
+  }
+
+  /* ── CODE / COMMANDS ── */
+  code {
+    background: #0a1e30;
+    color: #86efac;
+    padding: 0.1em 0.45em;
+    border-radius: 4px;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.88em;
+  }
+
+  pre {
+    background: #0a1e30;
+    border: 1px solid #1a3050;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 0.75rem 0 1rem;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    color: #86efac;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  a { color: #38bdf8; }
+  a:hover { color: #7dd3fc; }
+
+  /* ── RULES TABLE ── */
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 560px) {
+    .rules-grid { grid-template-columns: 1fr; }
+  }
+
+  .rule-box {
+    background: #0a1e30;
+    border: 1px solid #1a3050;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+
+  .rule-box h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #38bdf8;
+    margin-bottom: 0.6rem;
+  }
+
+  .rule-box p, .rule-box li {
+    color: #9ca3af;
+    font-size: 0.9rem;
+  }
+
+  .rule-box ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .rule-box ul li::before {
+    content: '›  ';
+    color: #38bdf8;
+  }
+
+  /* ── SHIP TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #38bdf8;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #1a3050;
+  }
+
+  td {
+    padding: 0.45rem 0.75rem;
+    color: #9ca3af;
+    border-bottom: 1px solid #0f2744;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .sym {
+    display: inline-block;
+    width: 1.4rem;
+    height: 1.4rem;
+    background: #1e4d8c;
+    border: 1px solid #38bdf8;
+    border-radius: 3px;
+    text-align: center;
+    line-height: 1.4rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: #38bdf8;
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚓ Battleship</h1>
+  <p>A two-player naval combat game — choose how you want to play</p>
+</header>
+
+<main>
+
+  <!-- ── PLAY NOW ── -->
+  <div class="play-now">
+    <a class="play-btn primary" href="webclient.html">Play in Browser (Graphical)</a>
+    <a class="play-btn secondary" href="player">Play in Browser (Terminal-style)</a>
+  </div>
+
+  <!-- ── HOW IT WORKS ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🎯</span>
+      <h2>How the Game Works</h2>
+    </div>
+    <p>
+      Battleship is a two-player guessing game. Each player secretly places a fleet of five ships
+      on a 10×10 grid, then players take turns firing at coordinates on the opponent's grid.
+      The first player to sink all five of the opponent's ships wins.
+    </p>
+    <p>
+      All three clients connect to the same server — players can mix and match freely.
+      One player on the web client can play against a player using the terminal, or any other combination.
+    </p>
+
+    <div class="rules-grid">
+      <div class="rule-box">
+        <h3>Coordinates</h3>
+        <p>Columns are letters <strong>A–J</strong> (left to right) and rows are numbers <strong>1–10</strong> (top to bottom).
+        Enter a column letter followed by a row number, e.g. <code>C5</code> or <code>J10</code>.</p>
+      </div>
+      <div class="rule-box">
+        <h3>Shot Results</h3>
+        <ul>
+          <li><strong>Miss</strong> — no ship at that location</li>
+          <li><strong>Hit</strong> — a ship occupies that cell</li>
+          <li><strong>Destroyed</strong> — that ship is completely sunk</li>
+        </ul>
+      </div>
+      <div class="rule-box">
+        <h3>Ship Placement</h3>
+        <ul>
+          <li>Ships extend right (Horizontal) or down (Vertical)</li>
+          <li>Ships cannot overlap or go off the board</li>
+          <li>Both players place ships before the game begins</li>
+        </ul>
+      </div>
+      <div class="rule-box">
+        <h3>Turns</h3>
+        <ul>
+          <li>Players alternate turns — one shot per turn</li>
+          <li>You cannot fire at the same location twice</li>
+          <li>The game ends when one player's fleet is fully sunk</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FLEET ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🚢</span>
+      <h2>The Fleet</h2>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Ship</th><th>Length</th><th>Symbol</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Carrier</td>   <td>5 cells</td><td><span class="sym">A</span></td></tr>
+        <tr><td>Battleship</td><td>4 cells</td><td><span class="sym">B</span></td></tr>
+        <tr><td>Cruiser</td>   <td>3 cells</td><td><span class="sym">C</span></td></tr>
+        <tr><td>Submarine</td> <td>3 cells</td><td><span class="sym">S</span></td></tr>
+        <tr><td>Destroyer</td> <td>2 cells</td><td><span class="sym">D</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── WEB CLIENT ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🌊</span>
+      <h2>Graphical Web Client</h2>
+      <span class="badge">Recommended</span>
+    </div>
+    <p>The easiest way to play — click to place ships and click to fire. Works in any modern browser, no installation needed.</p>
+    <ol class="steps">
+      <li>Open <a href="webclient.html">webclient.html</a> in your browser.</li>
+      <li>Enter your name and your opponent's name, then click <strong>Start / Join Game</strong>.
+          The first person to click this button creates the game; the second person joins it.</li>
+      <li>Place your fleet by clicking cells on the grid. Use the <strong>↔/↕</strong> button to toggle orientation,
+          <strong>🎲 Random</strong> to auto-place, or <strong>↩ Undo</strong> to remove the last ship.</li>
+      <li>Once both players have placed their ships, the game begins automatically.
+          Click a cell on the opponent's board to select it, then press <strong>Fire!</strong></li>
+      <li>The game ends when all ships on one side are destroyed. Click <strong>Play Again</strong> to start a new game.</li>
+    </ol>
+    <p>Use the <strong>✕ Quit</strong> button to leave a game early — this cancels it for both players.</p>
+  </div>
+
+  <!-- ── TERMINAL BROWSER ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">💻</span>
+      <h2>Terminal-Style Browser Client</h2>
+    </div>
+    <p>A keyboard-driven text interface that runs in the browser — same server, same game, different look and feel.</p>
+    <ol class="steps">
+      <li>Open <a href="player">player</a> in your browser.</li>
+      <li>Choose <strong>1</strong> to create a game (enter both player names) or <strong>2</strong> to join one an opponent created (enter your name and their name).</li>
+      <li>Place ships one at a time by typing a coordinate (e.g. <code>A3</code>), choosing an orientation from the dropdown, and clicking <strong>Place Ship</strong>.</li>
+      <li>When it's your turn, type a coordinate and press <strong>Fire!</strong> The board updates automatically while you wait for your opponent.</li>
+    </ol>
+  </div>
+
+  <!-- ── TERMINAL CLIENT ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">⌨️</span>
+      <h2>Command-Line Client</h2>
+    </div>
+    <p>A Python script that runs in a terminal window. Requires Python 3 and the <code>requests</code> library.</p>
+
+    <h3 style="color:#38bdf8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Installation</h3>
+    <pre><code>pip install requests</code></pre>
+
+    <h3 style="color:#38bdf8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Download</h3>
+    <p>Get <a href="https://github.com/atdd-bdd/BoardGame/blob/main/client.py" target="_blank" rel="noopener">client.py from GitHub</a>.</p>
+
+    <h3 style="color:#38bdf8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;margin-top:1rem">Running against the hosted server</h3>
+    <pre><code>python client.py --server https://boardgame.this-is-only-a-test.com</code></pre>
+
+    <h3 style="color:#38bdf8;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;margin-top:1rem">Running against a local server</h3>
+    <pre><code>python server.py          # in one terminal
+python client.py          # in two other terminals, one per player</code></pre>
+
+    <ol class="steps">
+      <li>Choose <strong>1</strong> to create a game — enter your name and your opponent's name.</li>
+      <li>Your opponent runs the same command, chooses <strong>2</strong>, and enters their name and your name to join.</li>
+      <li>Place your ships by typing coordinates (e.g. <code>C5</code>) and orientation (<code>H</code> or <code>V</code>).</li>
+      <li>When it's your turn, type a coordinate to fire. Type <code>Q</code> or press <strong>Ctrl+C</strong> to quit — this cancels the game for both players.</li>
+    </ol>
+  </div>
+
+  <!-- ── TIMEOUT ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">⏱️</span>
+      <h2>Timeouts</h2>
+    </div>
+    <p>The server automatically cancels a game if both players go idle:</p>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:0.4rem;color:#9ca3af;font-size:0.9rem">
+      <li>› <strong style="color:#cdd9e5">During setup</strong> (placing ships) — 2 minutes of no activity</li>
+      <li>› <strong style="color:#cdd9e5">During play</strong> — 20 seconds of no activity</li>
+    </ul>
+    <p style="margin-top:1rem">Activity is measured by polling — as long as a browser tab is open and connected, or the terminal client is running, the timer keeps resetting.</p>
+  </div>
+
+</main>
+
+</body>
+</html>
