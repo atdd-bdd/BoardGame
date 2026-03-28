@@ -87,8 +87,8 @@ def board_lines(board, hide_ships=False, label=''):
 
 def show_boards(game, my_name):
     opp = game['player2'] if my_name == game['player1'] else game['player1']
-    left  = board_lines(game['boards'][my_name], hide_ships=False, label=f'YOUR BOARD  ({my_name})')
-    right = board_lines(game['boards'][opp],     hide_ships=True,  label=f'OPPONENT    ({opp})')
+    left  = board_lines(game['boards'][opp],     hide_ships=True,  label=f'OPPONENT    ({opp})')
+    right = board_lines(game['boards'][my_name], hide_ships=False, label=f'YOUR BOARD  ({my_name})')
     for l, r in zip(left, right):
         print(f'{l:<38} {r}')
 
