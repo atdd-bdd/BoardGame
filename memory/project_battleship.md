@@ -29,7 +29,7 @@ Hit → `"Hit"`, Miss → `"Miss"`, ship sunk → `"<ShipType> Destroyed"` (e.g.
 - `server.py` — Flask REST API; `GameStore` class uses in-memory dict locally or SQLite when `GAME_DB` env var is set; port 5000
 - `client.py` — text-mode client, defaults to `http://localhost:5000`
 - `webclient.html` — single-file browser client; dark ocean theme; vanilla JS polling every 2s; ship placement UI; Quit button
-- `app.cgi` — CGI entry point for DreamHost (sets `GAME_DB=/home/kenpugh/battleship.db`)
+- `app.cgi` — CGI entry point for DreamHost (sets `GAME_DB=/home/<user>/battleship.db`)
 - `.htaccess` — Apache rewrite rules routing all requests through app.cgi
 - `deploy/do_deploy.py` — upload + setup script; run with `python deploy/do_deploy.py '<password>'`
 - `deploy/setup_dreamhost.sh` — one-time SSH setup (installs Flask, patches shebang)
@@ -44,8 +44,8 @@ Hit → `"Hit"`, Miss → `"Miss"`, ship sunk → `"<ShipType> Destroyed"` (e.g.
 - Both clients detect `status="Cancelled"` on next poll and show an overlay with the reason
 
 ## DreamHost deployment
-- SSH: kenpugh@boardgame.this-is-only-a-test.com port 22
-- SQLite DB: `/home/kenpugh/battleship.db`
-- Web root: `/home/kenpugh/boardgame.this-is-only-a-test.com/`
+- SSH: <user>@boardgame.this-is-only-a-test.com port 22
+- SQLite DB: `/home/<user>/battleship.db`
+- Web root: `/home/<user>/boardgame.this-is-only-a-test.com/`
 - Python: `/usr/bin/python3` (3.10.12), Flask installed `--user`
 - Redeploy: `python deploy/do_deploy.py '<password>'`
