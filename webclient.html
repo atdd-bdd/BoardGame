@@ -325,14 +325,30 @@
   .fire-row input:focus { border-color: #38bdf8; }
 
 
+  /* last message */
+  #last-message {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    text-align: center;
+    min-height: 1.4rem;
+  }
+
+  #last-message.msg-hit       { color: #f87171; }
+  #last-message.msg-miss      { color: #7aadcc; }
+  #last-message.msg-destroyed { color: #fb923c; }
+  #last-message.msg-system    { color: #38bdf8; }
+
   /* ship health panel */
   .ship-health-panel {
     background: #0d1f33;
     border: 1px solid #1e3a5f;
     border-radius: 8px;
-    padding: 0.75rem 0.75rem;
-    flex: 0 0 140px;
-    width: 140px;
+    padding: 0.5rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1.5rem;
+    width: 100%;
   }
 
   .panel-title {
@@ -340,14 +356,20 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #38bdf8;
-    margin-bottom: 0.6rem;
+  }
+
+  #ship-health-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    align-items: center;
   }
 
   .ship-health-item {
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    margin-bottom: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .ship-health-name {
@@ -361,39 +383,14 @@
   }
 
   .health-dot {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: #22c55e;
     display: inline-block;
   }
 
   .health-dot.hit { background: #ef4444; }
-
-  /* message log */
-  .message-log {
-    background: #0d1f33;
-    border: 1px solid #1e3a5f;
-    border-radius: 8px;
-    padding: 0.75rem 0.75rem;
-    flex: 0 0 140px;
-    width: 140px;
-    max-height: 390px;
-    overflow-y: auto;
-  }
-
-  .msg-entry {
-    font-size: 0.8rem;
-    padding: 0.2rem 0;
-    border-bottom: 1px solid #0f2744;
-    line-height: 1.4;
-  }
-
-  .msg-entry:last-child { border-bottom: none; }
-  .msg-hit { color: #f87171; }
-  .msg-miss { color: #6b7280; }
-  .msg-destroyed { color: #fb923c; }
-  .msg-system { color: #38bdf8; }
 
   /* ── OVERLAY ── */
   #overlay {
@@ -484,25 +481,17 @@
 <!-- ══ GAME PHASE ══ -->
 <div id="game-phase" class="hidden">
   <div class="status-bar" id="status-bar">Loading…</div>
-  <div id="debug-bar" style="font-size:0.7rem;color:#64748b;text-align:center;font-family:monospace;min-height:1rem"></div>
 
   <div id="game-names" style="font-size:0.85rem;color:#64748b;text-align:center;letter-spacing:0.05em"></div>
 
   <div class="game-main-row">
-    <div class="ship-health-panel">
-      <div class="panel-title">Your Ships</div>
-      <div id="ship-health-list"></div>
-    </div>
-    <div class="board-wrap">
-      <div class="board-title" id="my-board-title">Your Board</div>
-      <div class="board-grid" id="my-grid"></div>
-    </div>
     <div class="board-wrap">
       <div class="board-title" id="opp-board-title">Opponent's Board</div>
       <div class="board-grid" id="opp-grid"></div>
     </div>
-    <div class="message-log" id="message-log">
-      <div class="panel-title">Message Log</div>
+    <div class="board-wrap">
+      <div class="board-title" id="my-board-title">Your Board</div>
+      <div class="board-grid" id="my-grid"></div>
     </div>
   </div>
 
@@ -512,6 +501,13 @@
            onkeydown="if(event.key==='Enter')fireLoc()" />
     <button class="btn-danger" id="btn-fire" onclick="fireLoc()">Fire!</button>
     <button class="btn-secondary" onclick="quitGame()" style="margin-left:1rem">✕ Quit</button>
+  </div>
+
+  <div id="last-message"></div>
+
+  <div class="ship-health-panel">
+    <div class="panel-title">Your Ships</div>
+    <div id="ship-health-list"></div>
   </div>
 </div>
 
@@ -552,7 +548,6 @@ let placedShips = []; // [{type, location, orientation}]
 let hoverCells = [];
 let pollTimer = null;
 let firingLocked = false;
-let msgCount = 0;
 let selectedLoc = null; // currently highlighted target cell (e.g. 'C5')
 
 // ─────────────────────────────────────────────
@@ -908,9 +903,10 @@ function enterGamePhase() {
   document.getElementById('my-board-title').textContent  = myName + "'s Board";
   document.getElementById('opp-board-title').textContent = oppName + "'s Board";
   document.getElementById('game-names').textContent      = myName + ' vs ' + oppName;
-  buildGameGrid('my-grid', false);
   buildGameGrid('opp-grid', true);
+  buildGameGrid('my-grid', false);
   lastMoveCount = -1;
+  setLastMessage('', '');
   startPolling();
 }
 
@@ -1042,29 +1038,12 @@ function renderShipHealth(ships) {
   });
 }
 
-function addMessage(text, type) {
-  const log = document.getElementById('message-log');
-  const entry = document.createElement('div');
-  entry.className = 'msg-entry msg-' + type;
-  entry.textContent = text;
-
-  // Insert after panel-title
-  const title = log.querySelector('.panel-title');
-  if (title && title.nextSibling) {
-    log.insertBefore(entry, title.nextSibling);
-  } else {
-    log.appendChild(entry);
-  }
-
-  // Keep last 20
-  const entries = log.querySelectorAll('.msg-entry');
-  if (entries.length > 20) {
-    entries[entries.length - 1].remove();
-  }
-  msgCount++;
+function setLastMessage(text, type) {
+  const el = document.getElementById('last-message');
+  el.textContent = text;
+  el.className = type ? 'msg-' + type : '';
 }
 
-let lastTurn = -1;
 let lastMoveCount = -1;
 
 async function poll() {
@@ -1116,17 +1095,8 @@ async function poll() {
 
   // Render boards
   if (state.boards) {
-    const myBoard  = state.boards[myName];
-    const oppBoard = state.boards[oppName];
-    const shots = oppBoard ? oppBoard.flat().filter(c => c==='@'||c==='X').length : 0;
-    const myHits = myBoard  ? myBoard.flat().filter(c => c==='@'||c==='X').length : 0;
-    // Debug: show what the server returned
-    document.getElementById('debug-bar').textContent =
-      `[debug] myName=${myName} oppName=${oppName} ` +
-      `myBoard=${myBoard ? 'ok' : 'MISSING'} oppBoard=${oppBoard ? 'ok' : 'MISSING'} ` +
-      `shots-on-opp=${shots} shots-on-me=${myHits} turn=${state.turn} mine=${state.current_turn===myName}`;
-    if (myBoard)  renderBoard('my-grid',  myBoard,  false);
-    if (oppBoard) renderBoard('opp-grid', oppBoard, true);
+    if (state.boards[myName])  renderBoard('my-grid',  state.boards[myName],  false);
+    if (state.boards[oppName]) renderBoard('opp-grid', state.boards[oppName], true);
   }
 
   // Interactivity
@@ -1137,33 +1107,22 @@ async function poll() {
     renderShipHealth(state.ships);
   }
 
-  // Message log: process new moves (skip history on first poll)
-  if (state.moves && lastMoveCount === -1) {
-    lastMoveCount = state.moves.length;
-  }
-  if (state.moves && state.moves.length > lastMoveCount) {
-    const newMoves = state.moves.slice(lastMoveCount);
-    newMoves.forEach(move => {
-      const who = move.player === myName ? 'You' : oppName;
-      const result = move.result || '';
-      let type = 'miss';
-      let text = '';
-      if (result === 'Miss') {
-        type = 'miss';
-        text = `${who} fired at ${move.location} — Miss`;
-      } else if (result === 'Hit') {
-        type = 'hit';
-        text = `${who} fired at ${move.location} — Hit!`;
-      } else if (result.includes('Destroyed')) {
-        type = 'destroyed';
-        text = `${who} fired at ${move.location} — ${result}!`;
-      } else {
-        type = 'system';
-        text = `${who} fired at ${move.location} — ${result}`;
-      }
-      addMessage(text, type);
-    });
-    lastMoveCount = state.moves.length;
+  // Last move message
+  if (state.moves && state.moves.length > 0) {
+    const last = state.moves[state.moves.length - 1];
+    const who = last.player === myName ? 'You' : oppName;
+    const result = last.result || '';
+    let type, text;
+    if (result === 'Miss') {
+      type = 'miss'; text = `${who} fired at ${last.location} — Miss`;
+    } else if (result === 'Hit') {
+      type = 'hit'; text = `${who} fired at ${last.location} — Hit!`;
+    } else if (result.includes('Destroyed')) {
+      type = 'destroyed'; text = `${who} fired at ${last.location} — ${result}!`;
+    } else {
+      type = 'system'; text = `${who} fired at ${last.location} — ${result}`;
+    }
+    setLastMessage(text, type);
   }
 
   // Re-enable firing if we unlocked between polls
@@ -1246,7 +1205,7 @@ async function fireLoc() {
   const input = document.getElementById('fire-input');
   const loc = input.value.trim().toUpperCase();
   if (!/^[A-J]([1-9]|10)$/i.test(loc)) {
-    addMessage('Invalid location format. Use A-J followed by 1-10.', 'system');
+    setLastMessage('Invalid location format. Use A-J followed by 1-10.', 'system');
     return;
   }
   // Clear selection
@@ -1269,7 +1228,7 @@ async function doFire(loc) {
   const r = await api('POST', `/games/${gameId}/moves`, { player: myName, location: loc });
 
   if (!r.ok) {
-    addMessage('Error: ' + (r.data.error || 'Could not fire.'), 'system');
+    setLastMessage('Error: ' + (r.data.error || 'Could not fire.'), 'system');
     firingLocked = false;
     // Re-enable controls if still our turn
     await poll();
