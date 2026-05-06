@@ -129,12 +129,18 @@
     min-width: 200px;
   }
 
+  .ship-list-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .ship-list-title {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: #38bdf8;
-    margin-bottom: 0.25rem;
   }
 
   .ship-item {
@@ -474,7 +480,10 @@
       </div>
       <div class="placement-hint" id="placement-hint" style="margin-top:.5rem"></div>
     </div>
-    <div class="ship-list" id="ship-list"></div>
+    <div class="ship-list-wrap">
+      <div class="ship-list-title">Ships</div>
+      <div class="ship-list" id="ship-list"></div>
+    </div>
   </div>
 </div>
 
@@ -856,7 +865,7 @@ function placeRandom() {
 
 function updateShipList() {
   const el = document.getElementById('ship-list');
-  el.innerHTML = '<div class="ship-list-title">Ships</div>';
+  el.innerHTML = '';
   SHIPS.forEach((ship, i) => {
     const div = document.createElement('div');
     div.className = 'ship-item';

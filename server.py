@@ -116,14 +116,22 @@ def ship_cells(location, orientation, length):
 @app.route('/index.html')
 def index_page():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html')
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
 @app.route('/player')
 def player_page():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'player.html')
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
+        return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
+@app.route('/webclient')
+@app.route('/webclient.html')
+def webclient_page():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'webclient.html')
+    with open(path, encoding='utf-8') as f:
         return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
@@ -131,7 +139,7 @@ def player_page():
 @app.route('/mobile.html')
 def mobile_page():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mobile.html')
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
